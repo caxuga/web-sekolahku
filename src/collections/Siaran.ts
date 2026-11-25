@@ -1,102 +1,33 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionConfig } from 'payload'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { isAuthenticated } from '../auth/apiKeyStrategy'
-
+import { canCreateContent, canDeleteContent, canPublishContent, canUpdateContent, publicOrAuthenticatedRead } from '../access/roles'
+const slugify = (value: string) => value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 export const Siaran: CollectionConfig = {
-  slug: 'siaran',
-  labels: {
-    singular: 'Berita KPM',
-    plural: 'Berita KPM',
-  },
-  access: {
-    read: isAuthenticated,
-    create: isAuthenticated,
-    update: isAuthenticated,
-    delete: isAuthenticated,
-  },
-  admin: {
-    useAsTitle: 'title',
-    defaultColumns: ['title', 'image', 'articleDate', 'content', 'category', 'attachments', 'createdAt', 'updatedAt'],
-  },
+  slug: 'siaran', labels: { singular: 'Berita', plural: 'Berita' },
+  access: { read: publicOrAuthenticatedRead, create: canCreateContent, update: canUpdateContent, delete: canDeleteContent },
+  admin: { useAsTitle: 'title', defaultColumns: ['title', 'status', 'articleDate', 'category', 'updatedAt'], description: 'Berita sekolah. Konten berstatus Terbit akan tampil di website publik.' },
+  hooks: { beforeChange: [({ data, operation, req, originalDoc }) => {
+    if (data.title && (!data.slug || operation === 'create')) data.slug = slugify(data.title)
+    if (operation === 'create' && req.user) data.createdBy = req.user.id
+    const nextStatus = data.status ?? originalDoc?.status ?? 'draft'
+    if (nextStatus === 'published' && !canPublishContent(req.user)) throw new APIError('Hanya Admin Sekolah atau Kepala Sekolah yang dapat menerbitkan konten.', 403)
+    if (nextStatus === 'published' && !data.publishedAt && !originalDoc?.publishedAt) data.publishedAt = new Date().toISOString()
+    return data
+  }] },
   fields: [
-    {
-      name: 'title',
-      type: 'text',
-      required: true,
-      admin: {
-        description: 'The title of the article',
-      },
+    { name: 'title', type: 'text', required: true, label: 'Judul Berita' },
+    { name: 'slug', type: 'text', required: true, unique: true, index: true, admin: { position: 'sidebar', description: 'URL dibuat otomatis dari judul.' } },
+    { name: 'excerpt', type: 'textarea', label: 'Ringkasan', maxLength: 280 },
+    { name: 'image', type: 'upload', relationTo: 'articles-media', required: false, label: 'Gambar Utama' },
+    { name: 'articleDate', type: 'date', required: true, label: 'Tanggal', admin: { date: { pickerAppearance: 'dayOnly', displayFormat: 'dd/MM/yyyy' } } },
+    { name: 'content', type: 'richText', required: true, label: 'Isi Konten', editor: lexicalEditor() },
+    { name: 'category', type: 'relationship', relationTo: 'categories', required: false, label: 'Kategori' },
+    { name: 'status', type: 'select', required: true, defaultValue: 'draft', label: 'Status Publikasi',
+      options: [{ label: 'Draft', value: 'draft' }, { label: 'Menunggu Persetujuan', value: 'review' }, { label: 'Terbit', value: 'published' }, { label: 'Ditolak', value: 'rejected' }],
+      admin: { position: 'sidebar' },
     },
-    {
-      name: 'image',
-      type: 'upload',
-      relationTo: 'articles-media',
-      required: true,
-      admin: {
-        description:
-          'Main image for the article. Accepted formats: PDF, PNG, JPEG, and JPG. Maximum file size: 50MB.',
-        hidden: false,
-      },
-    },
-    // {
-    //   name: 'readTime',
-    //   type: 'number',
-    //   required: true,
-    //   admin: {
-    //     description: 'Estimated read time in minutes',
-    //   },
-    // },
-    {
-      name: 'articleDate',
-      type: 'date',
-      required: true,
-      admin: {
-        description: 'Date of the article',
-        date: {
-          pickerAppearance: 'dayOnly',
-          displayFormat: 'dd/MM/yyyy',
-        },
-      },
-    },
-    {
-      name: 'attachments',
-      type: 'array',
-      required: false,
-      admin: {
-        description: 'Additional files or images attached to the event',
-      },
-      fields: [
-        {
-          name: 'file',
-          type: 'upload',
-          relationTo: 'media',
-          required: false,
-          admin: {
-            description: 'Upload additional files or images',
-          },
-        },
-      ],
-    },
-    {
-      name: 'content',
-      type: 'richText',
-      required: true,
-      editor: lexicalEditor(),
-      admin: {
-        description: 'Main content of the article',
-      },
-    },
-    {
-      name: 'category',
-      type: 'relationship',
-      relationTo: 'categories',
-      required: true,
-      hasMany: false,
-      admin: {
-        description: 'Select a category for this article',
-      },
-    },
+    { name: 'publishedAt', type: 'date', label: 'Tanggal Terbit', admin: { position: 'sidebar', readOnly: true } },
+    { name: 'createdBy', type: 'relationship', relationTo: 'users', label: 'Dibuat Oleh', admin: { position: 'sidebar', readOnly: true } },
   ],
   timestamps: true,
-  upload: false,
 }
