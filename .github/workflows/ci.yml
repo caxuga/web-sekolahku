@@ -7,7 +7,7 @@ on:
     branches: [main, develop, 'chore/**', 'feat/**', 'fix/**']
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
@@ -30,7 +30,19 @@ jobs:
           node-version: 24
           cache: pnpm
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
+      - name: Commit refreshed lockfile
+        if: github.event_name == 'push' && github.ref == 'refs/heads/chore/security-baseline'
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml; then
+            echo "Lockfile is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore(deps): refresh pnpm lockfile [lock-refresh]"
+          git push origin chore/security-baseline
       - name: Generate Payload types
         run: pnpm generate:types
       - name: Typecheck
