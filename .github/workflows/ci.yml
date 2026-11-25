@@ -15,7 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      DATABASE_URI: mongodb://127.0.0.1:27017/ci
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ci
+      RUN_PAYLOAD_MIGRATIONS: 'false'
       PAYLOAD_SECRET: ci-only-secret-value-with-more-than-thirty-two-characters
       STORAGE_DRIVER: local
     steps:
