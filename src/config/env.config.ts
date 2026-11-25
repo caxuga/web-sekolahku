@@ -1,3 +1,8 @@
+export const isVisualPreview = () =>
+  process.env.VERCEL_ENV === 'preview' &&
+  process.env.CMS_PREVIEW_MODE === 'true' &&
+  !process.env.DATABASE_URI?.trim()
+
 const required = (name: string): string => {
   const value = process.env[name]?.trim()
   if (!value) throw new Error(`Missing required environment variable: ${name}`)
@@ -8,8 +13,9 @@ export type AppEnvironment = {
   r2?: { bucket: string; endpoint: string; publicURL: string; accessKeyId: string; secretAccessKey: string }
 }
 export function validateEnvironment(): AppEnvironment {
-  const databaseURI = required('DATABASE_URI')
-  const payloadSecret = required('PAYLOAD_SECRET')
+  const visualPreview = isVisualPreview()
+  const databaseURI = visualPreview ? 'mongodb://127.0.0.1:27017/web-sekolahku-preview-shell' : required('DATABASE_URI')
+  const payloadSecret = visualPreview ? 'preview-shell-only-secret-not-for-authentication-0001' : required('PAYLOAD_SECRET')
   if (payloadSecret.length < 32) throw new Error('PAYLOAD_SECRET must contain at least 32 characters')
   const storageDriver = process.env.STORAGE_DRIVER === 'r2' ? 'r2' : 'local'
   if (storageDriver === 'r2') return {
