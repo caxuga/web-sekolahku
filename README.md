@@ -79,6 +79,6 @@ File yang dikelola koleksi Media saat ini disajikan melalui URL publik R2. Janga
 
 ## Deployment
 
-- `main`: Production.
-- Pull request dan branch fitur: Vercel Preview.
-- GitHub Actions CI menjalankan typecheck, lint, tests, dan build.
+- `main`: Production deployment melalui Vercel Git Integration.
+- Pull request dan branch fitur: Vercel Preview deployment.
+- GitHub Actions CI menjalankan typecheck, lint, tests, dan build sebelum merge.
