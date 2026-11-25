@@ -63,6 +63,43 @@ Hubungkan repository fork ke Vercel. Gunakan Node.js 24.x dan atur environment v
 
 Buat database dan bucket terpisah untuk Preview dan Production. Jangan gunakan kredensial yang sama untuk keduanya.
 
+## Fitur website dan CMS
+
+Website publik saat ini menyediakan:
+- Beranda dengan identitas sekolah, berita terbaru, dan agenda terbaru.
+- Daftar berita dan detail berita.
+- Daftar agenda dan detail agenda.
+- Layout responsif untuk desktop, tablet, dan ponsel.
+
+Di panel `/admin`, konfigurasi:
+- **Identitas Sekolah**: nama, slogan, judul beranda, deskripsi, logo, alamat, telepon, email, dan footer.
+- **Berita** dan **Agenda Sekolah**: judul, slug otomatis, ringkasan, gambar, tanggal, isi, kategori, dan status publikasi.
+
+### Peran pengguna
+
+| Peran | Hak utama |
+|---|---|
+| Super Admin | Seluruh konfigurasi dan pengguna |
+| Admin Sekolah | Mengelola pengguna, identitas, konten, dan publikasi |
+| Kepala Sekolah | Meninjau dan menerbitkan konten |
+| Editor | Membuat, mengubah, dan menghapus konten |
+| Guru | Membuat konten dan mengubah konten miliknya |
+
+Pengguna pertama yang dibuat pada database kosong otomatis menjadi **Super Admin**. Setelah login, buat akun staf lain melalui menu Pengguna dan tetapkan perannya.
+
+Konten baru berstatus **Draft**. Editor/Guru dapat mengirim konten ke status **Menunggu Persetujuan**. Hanya Super Admin, Admin Sekolah, atau Kepala Sekolah yang dapat mengubah konten menjadi **Terbit**. Hanya konten Terbit yang dibaca oleh pengunjung publik.
+
+### Preview Vercel
+
+Project Vercel terhubung ke repository `caxuga/web-sekolahku`. Pull request dari branch fitur akan menjadi Preview Deployment. Untuk menjalankan CMS secara fungsional, atur Environment Variables pada target **Preview**:
+
+- `DATABASE_URI`: database MongoDB Atlas khusus Preview.
+- `PAYLOAD_SECRET`: secret unik untuk Preview, minimal 32 karakter.
+- `STORAGE_DRIVER`: `r2` jika upload akan diuji.
+- `R2_BUCKET`, `R2_ENDPOINT`, `R2_PUBLIC_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`: kredensial bucket Preview.
+
+Jangan menggunakan database, secret, atau bucket Production untuk Preview. Jangan kirim secret melalui issue, commit, atau chat. Masukkan langsung di Vercel Project Settings → Environment Variables. Jika belum ada database Preview, deployment tidak dapat menjalankan panel CMS atau mengambil konten dari database.
+
 ## Cloudflare R2 CORS
 
 Konfigurasikan bucket agar mengizinkan origin domain Vercel Preview/Production yang digunakan, metode `PUT`, dan header `If-None-Match`. Batasi origin ke domain aplikasi; jangan memakai wildcard untuk bucket produksi.
