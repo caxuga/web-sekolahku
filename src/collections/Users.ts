@@ -6,7 +6,7 @@ export const Users: CollectionConfig = {
   slug: 'users', labels: { singular: 'Pengguna', plural: 'Pengguna' },
   admin: { useAsTitle: 'email', defaultColumns: ['email', 'name', 'role', 'updatedAt'], description: `Password policy: ${PASSWORD_POLICY_UI_DESCRIPTION}` },
   access: {
-    admin: isSchoolAdmin,
+    admin: ({ req }) => hasAnyRole(req.user, ['super-admin', 'admin-sekolah']),
     create: async ({ req }) => {
       if (req.user) return hasAnyRole(req.user, ['super-admin', 'admin-sekolah'])
       const existing = await req.payload.find({ collection: 'users', limit: 1, overrideAccess: true, depth: 0 })
@@ -37,7 +37,7 @@ export const Users: CollectionConfig = {
         { label: 'Super Admin', value: 'super-admin' }, { label: 'Admin Sekolah', value: 'admin-sekolah' },
         { label: 'Kepala Sekolah', value: 'kepala-sekolah' }, { label: 'Editor', value: 'editor' }, { label: 'Guru', value: 'guru' },
       ],
-      access: { update: isSchoolAdmin }, admin: { position: 'sidebar', description: 'Peran menentukan akses pengguna pada CMS.' },
+      access: { update: ({ req }) => hasAnyRole(req.user, ['super-admin', 'admin-sekolah']) }, admin: { position: 'sidebar', description: 'Peran menentukan akses pengguna pada CMS.' },
     },
   ],
 }
