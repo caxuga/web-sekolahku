@@ -1,5 +1,5 @@
 import config from '@payload-config'
-import { getPayload } from 'payload'
+import { getPayload, type Where } from 'payload'
 
 export type SchoolSettingsData = {
   schoolName?: string
@@ -35,7 +35,7 @@ export async function getPublicContent(collection: 'siaran' | 'takwim', limit = 
 }
 export async function getPublicContentBySlug(collection: 'siaran' | 'takwim', slug: string): Promise<PublicContent | null> {
   const payload = await getPayload({ config })
-  const where = { and: [{ slug: { equals: slug } }, { status: { equals: 'published' } }] }
+  const where: Where = { and: [{ slug: { equals: slug } }, { status: { equals: 'published' } }] }
   const result = collection === 'siaran'
     ? await payload.find({ collection: 'siaran', where, limit: 1, depth: 2 })
     : await payload.find({ collection: 'takwim', where, limit: 1, depth: 2 })
