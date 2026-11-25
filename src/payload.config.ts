@@ -19,22 +19,37 @@ const env = validateEnvironment()
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const storagePlugins =
-  env.storageDriver === 's3' && env.s3
+const storageAdapters =
+  env.storageDriver === 'r2' && env.r2
     ? [
         s3Storage({
-          collections: { media: true, 'articles-media': true },
-          bucket: env.s3.bucket,
+          bucket: env.r2.bucket,
+          clientUploads: true,
+          collections: {
+            media: {
+              disablePayloadAccessControl: true,
+              generateFileURL: ({ filename, prefix }) => {
+                const key = prefix ? `${prefix}/${filename}` : filename
+                return `${env.r2!.publicURL}/${key}`
+              },
+            },
+            'articles-media': {
+              disablePayloadAccessControl: true,
+              generateFileURL: ({ filename, prefix }) => {
+                const key = prefix ? `${prefix}/${filename}` : filename
+                return `${env.r2!.publicURL}/${key}`
+              },
+            },
+          },
           config: {
             credentials: {
-              accessKeyId: env.s3.accessKeyId,
-              secretAccessKey: env.s3.secretAccessKey,
+              accessKeyId: env.r2.accessKeyId,
+              secretAccessKey: env.r2.secretAccessKey,
             },
-            endpoint: env.s3.endpoint,
+            endpoint: env.r2.endpoint,
             forcePathStyle: true,
-            region: env.s3.region,
+            region: 'auto',
           },
-          clientUploads: true,
         }),
       ]
     : []
@@ -69,5 +84,5 @@ export default buildConfig({
   },
   db: mongooseAdapter({ url: env.databaseURI }),
   sharp,
-  plugins: storagePlugins,
+  storage: storageAdapters,
 })

@@ -7,20 +7,19 @@ const required = (name: string): string => {
 export type AppEnvironment = {
   databaseURI: string
   payloadSecret: string
-  storageDriver: 'local' | 's3'
-  s3?: {
+  storageDriver: 'local' | 'r2'
+  r2?: {
     bucket: string
     endpoint: string
-    region: string
+    publicURL: string
     accessKeyId: string
     secretAccessKey: string
   }
 }
 
 /**
- * Validate configuration before Payload initializes. Unlike the former AWS
- * Secrets Manager loader, this fails closed instead of silently starting with
- * missing credentials. Configure secrets in the deployment platform.
+ * Validate configuration before Payload initializes. Deployment secrets belong
+ * in Vercel Environment Variables, not in tracked files or source code.
  */
 export function validateEnvironment(): AppEnvironment {
   const databaseURI = required('DATABASE_URI')
@@ -30,19 +29,19 @@ export function validateEnvironment(): AppEnvironment {
     throw new Error('PAYLOAD_SECRET must contain at least 32 characters')
   }
 
-  const storageDriver = process.env.STORAGE_DRIVER === 's3' ? 's3' : 'local'
+  const storageDriver = process.env.STORAGE_DRIVER === 'r2' ? 'r2' : 'local'
 
-  if (storageDriver === 's3') {
+  if (storageDriver === 'r2') {
     return {
       databaseURI,
       payloadSecret,
       storageDriver,
-      s3: {
-        bucket: required('S3_BUCKET_NAME'),
-        endpoint: required('S3_ENDPOINT'),
-        region: process.env.S3_REGION?.trim() || 'auto',
-        accessKeyId: required('S3_ACCESS_KEY_ID'),
-        secretAccessKey: required('S3_SECRET_ACCESS_KEY'),
+      r2: {
+        bucket: required('R2_BUCKET'),
+        endpoint: required('R2_ENDPOINT'),
+        publicURL: required('R2_PUBLIC_URL').replace(/\/$/, ''),
+        accessKeyId: required('R2_ACCESS_KEY_ID'),
+        secretAccessKey: required('R2_SECRET_ACCESS_KEY'),
       },
     }
   }
