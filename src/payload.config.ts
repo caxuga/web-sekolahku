@@ -1,13 +1,10 @@
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
-import { resolveEnvFromSecretsManager } from './config/env.config'
-
-await resolveEnvFromSecretsManager()
-
-import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
+import { buildConfig } from 'payload'
 import sharp from 'sharp'
+import { s3Storage } from '@payloadcms/storage-s3'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
@@ -16,12 +13,31 @@ import { Takwim } from './collections/Takwim'
 import { Siaran } from './collections/Siaran'
 import { Categories } from './collections/Categories'
 import { PASSWORD_POLICY_UI_DESCRIPTION } from './utils/password-policy.util'
+import { validateEnvironment } from './config/env.config'
 
-import { s3Storage } from '@payloadcms/storage-s3'
-
+const env = validateEnvironment()
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-const useS3Storage = process.env.NODE_ENV === 'production' || process.env.STORAGE_DRIVER === 's3'
+
+const storagePlugins =
+  env.storageDriver === 's3' && env.s3
+    ? [
+        s3Storage({
+          collections: { media: true, 'articles-media': true },
+          bucket: env.s3.bucket,
+          config: {
+            credentials: {
+              accessKeyId: env.s3.accessKeyId,
+              secretAccessKey: env.s3.secretAccessKey,
+            },
+            endpoint: env.s3.endpoint,
+            forcePathStyle: true,
+            region: env.s3.region,
+          },
+          clientUploads: true,
+        }),
+      ]
+    : []
 
 export default buildConfig({
   admin: {
@@ -34,15 +50,7 @@ export default buildConfig({
   },
   collections: [Users, Media, ArticlesMedia, Takwim, Siaran, Categories],
   editor: lexicalEditor(),
-  // Nothing consumes GraphQL: the admin panel, sekolahku-mod-api and
-  // sekolahku-fe all use REST or read MongoDB directly. It never worked
-  // either - Categories.colors stores hex values such as '#10B981', which
-  // are not valid GraphQL enum names, so building the schema threw and every
-  // /api/graphql request returned 500. Disabling it returns a clean 404 and
-  // removes an unused attack surface (see security assessment F-02).
-  graphQL: {
-    disable: true,
-  },
+  graphQL: { disable: true },
   i18n: {
     translations: {
       en: {
@@ -55,21 +63,11 @@ export default buildConfig({
       },
     },
   },
-  secret: process.env.PAYLOAD_SECRET ?? '',
+  secret: env.payloadSecret,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: mongooseAdapter({
-    url: process.env.DATABASE_URI ?? '',
-  }),
+  db: mongooseAdapter({ url: env.databaseURI }),
   sharp,
-  plugins: useS3Storage
-    ? [
-        s3Storage({
-          collections: { media: true, 'articles-media': true },
-          bucket: process.env.S3_BUCKET_NAME ?? '',
-          config: {},
-        }),
-      ]
-    : [],
+  plugins: storagePlugins,
 })
