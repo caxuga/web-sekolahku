@@ -75,6 +75,12 @@ Di panel `/admin`, konfigurasi:
 - **Identitas Sekolah**: nama, slogan, judul beranda, deskripsi, logo, alamat, telepon, email, dan footer.
 - **Berita** dan **Agenda Sekolah**: judul, slug otomatis, ringkasan, gambar, tanggal, isi, kategori, dan status publikasi.
 
+### Mode visual preview
+
+Vercel Preview memiliki `CMS_PREVIEW_MODE=true`. Jika `DATABASE_URI` belum diisi, aplikasi menampilkan shell website dengan data contoh dan menyembunyikan tautan login CMS. Mode ini hanya berlaku pada target Preview; Production tetap wajib memakai database dan secret asli.
+
+Setelah MongoDB Atlas Preview siap, isi `DATABASE_URI` dan `PAYLOAD_SECRET` di Vercel. Mode visual otomatis berhenti menggunakan fallback setelah `DATABASE_URI` tersedia. Panel admin dan penyimpanan konten belum dapat diuji dalam mode visual preview.
+
 ### Peran pengguna
 
 | Peran | Hak utama |
