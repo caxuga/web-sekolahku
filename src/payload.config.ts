@@ -37,6 +37,7 @@ export default buildConfig({
   db: postgresAdapter({
     pool: { connectionString: env.databaseURL, max: 1, connectionTimeoutMillis: 10_000 },
     migrationDir: path.resolve(dirname, 'migrations'),
+    schemaName: 'web_sekolahku',
   }),
   sharp, plugins: storagePlugins,
 })
