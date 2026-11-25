@@ -10,7 +10,9 @@ export const Siaran: CollectionConfig = {
     if (data.title && (!data.slug || operation === 'create')) data.slug = slugify(data.title)
     if (operation === 'create' && req.user) data.createdBy = req.user.id
     const nextStatus = data.status ?? originalDoc?.status ?? 'draft'
-    if (nextStatus === 'published' && !canPublishContent(req.user)) throw new APIError('Hanya Admin Sekolah atau Kepala Sekolah yang dapat menerbitkan konten.', 403)
+    const wasPublished = originalDoc?.status === 'published'
+    if (nextStatus === 'published' && !wasPublished && !canPublishContent(req.user)) throw new APIError('Hanya Admin Sekolah atau Kepala Sekolah yang dapat menerbitkan konten.', 403)
+    if (wasPublished && nextStatus !== 'published' && !canPublishContent(req.user)) throw new APIError('Hanya Admin Sekolah atau Kepala Sekolah yang dapat mengubah status konten terbit.', 403)
     if (nextStatus === 'published' && !data.publishedAt && !originalDoc?.publishedAt) data.publishedAt = new Date().toISOString()
     return data
   }] },
@@ -27,7 +29,7 @@ export const Siaran: CollectionConfig = {
       admin: { position: 'sidebar' },
     },
     { name: 'publishedAt', type: 'date', label: 'Tanggal Terbit', admin: { position: 'sidebar', readOnly: true } },
-    { name: 'createdBy', type: 'relationship', relationTo: 'users', label: 'Dibuat Oleh', admin: { position: 'sidebar', readOnly: true } },
+    { name: 'createdBy', type: 'relationship', relationTo: 'users', label: 'Dibuat Oleh', access: { update: () => false }, admin: { position: 'sidebar', readOnly: true } },
   ],
   timestamps: true,
 }
