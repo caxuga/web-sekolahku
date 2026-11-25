@@ -1,9 +1,10 @@
 import { APIError, type CollectionConfig } from 'payload'
 import path from 'path'
 import { getAltFromFilename } from '../utils/alt.util'
+import { canCreateContent, canDeleteContent } from '../access/roles'
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024
-const ALLOWED_MIME_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg']
+const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
 export const ArticlesMedia: CollectionConfig = {
   slug: 'articles-media',
@@ -12,10 +13,13 @@ export const ArticlesMedia: CollectionConfig = {
     plural: 'Media Artikel',
   },
   admin: {
-    description: 'Accepted formats: PDF, PNG, JPEG, and JPG. Maximum file size: 50MB. Invalid uploads will be rejected automatically.',
+    description: 'Accepted formats: PNG, JPEG, and WebP. Maximum file size: 50MB. Invalid uploads will be rejected automatically.',
   },
   access: {
     read: () => true,
+    create: canCreateContent,
+    update: canCreateContent,
+    delete: canDeleteContent,
   },
   hooks: {
     beforeChange: [
@@ -28,7 +32,7 @@ export const ArticlesMedia: CollectionConfig = {
         }
 
         if (mimeType && !ALLOWED_MIME_TYPES.includes(mimeType)) {
-          throw new APIError('Only PDF, PNG, JPEG, and JPG files are allowed.', 400)
+          throw new APIError('Only PNG, JPEG, and WebP images are allowed.', 400)
         }
 
         const originalFilename =
