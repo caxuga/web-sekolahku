@@ -1,4 +1,4 @@
-import { mongooseAdapter } from '@payloadcms/db-mongodb'
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -34,5 +34,9 @@ export default buildConfig({
     general: { newPassword: `New Password (${PASSWORD_POLICY_UI_DESCRIPTION})` },
   } } },
   secret: env.payloadSecret, typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
-  db: mongooseAdapter({ url: env.databaseURI }), sharp, plugins: storagePlugins,
+  db: postgresAdapter({
+    pool: { connectionString: env.databaseURL, max: 1, connectionTimeoutMillis: 10_000 },
+    migrationDir: path.resolve(dirname, 'migrations'),
+  }),
+  sharp, plugins: storagePlugins,
 })
