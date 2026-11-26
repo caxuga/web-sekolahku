@@ -1,4 +1,4 @@
-import type { ClientUploadsAccess, ClientUploadContext, GeneratedAdapter } from '@payloadcms/plugin-cloud-storage/types'
+import type { Adapter, ClientUploadsAccess, CollectionOptions, GeneratedAdapter } from '@payloadcms/plugin-cloud-storage/types'
 import { initClientUploads, resolveSignedURLKey, buildStoragePathData, getStorageFilePath } from '@payloadcms/plugin-cloud-storage/utilities'
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import { APIError, Forbidden, type Config, type PayloadHandler, type UploadCollectionSlug } from 'payload'
@@ -17,7 +17,7 @@ type SupabaseStorageOptions = {
 const encodeKey = (key: string) => key.split('/').map(encodeURIComponent).join('/')
 const apiURL = (url: string) => `${url.replace(/\/$/, '')}/storage/v1`
 
-function createSupabaseAdapter(options: SupabaseStorageOptions, collectionPrefix = ''): (args: { collection: any; prefix?: string }) => GeneratedAdapter {
+function createSupabaseAdapter(options: SupabaseStorageOptions, collectionPrefix = ''): Adapter {
   const baseURL = apiURL(options.url)
   const headers = {
     apikey: options.serviceRoleKey,
@@ -171,17 +171,19 @@ export const supabaseStorage = (options: SupabaseStorageOptions) => (incomingCon
     serverHandlerPath: '/storage-supabase-generate-signed-url',
   })
 
-  const configuredCollections = Object.entries(options.collections).reduce(
-    (result, [slug, collectionOptions]) => ({
-      ...result,
-      [slug]: {
+  const configuredCollections = Object.fromEntries(
+    Object.entries(options.collections).map(([slug, collectionOptions]) => [
+      slug,
+      {
         ...(collectionOptions === true ? {} : collectionOptions),
-        adapter: createSupabaseAdapter(options, typeof collectionOptions === 'object' ? collectionOptions.prefix : ''),
-        disablePayloadAccessControl: true,
+        adapter: createSupabaseAdapter(
+          options,
+          typeof collectionOptions === 'object' ? collectionOptions.prefix : '',
+        ),
+        disablePayloadAccessControl: true as const,
       },
-    }),
-    {} as Record<string, { adapter: (args: { collection: any; prefix?: string }) => GeneratedAdapter; disablePayloadAccessControl: true; prefix?: string }>,
-  )
+    ]),
+  ) as Partial<Record<UploadCollectionSlug, CollectionOptions>>
 
   const configWithDisabledLocalStorage: Config = {
     ...incomingConfig,
