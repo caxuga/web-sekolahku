@@ -12,21 +12,18 @@ importers:
 
   .:
     dependencies:
-      '@aws-sdk/client-s3':
-        specifier: ^3.1158.0
-        version: 3.1159.0
       '@payloadcms/db-postgres':
         specifier: 3.94.2
         version: 3.94.2(payload@3.94.2(graphql@16.14.2)(typescript@5.7.3))
+      '@payloadcms/plugin-cloud-storage':
+        specifier: 3.94.2
+        version: 3.94.2(@types/react@19.2.18)(monaco-editor@0.57.0)(next@16.4.6(@babel/core@7.29.7)(@playwright/test@1.56.1)(@types/node@22.20.5)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(sass@1.77.4))(payload@3.94.2(graphql@16.14.2)(typescript@5.7.3))(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(typescript@5.7.3)
       '@payloadcms/next':
         specifier: 3.94.2
         version: 3.94.2(@types/react@19.2.18)(graphql@16.14.2)(monaco-editor@0.57.0)(next@16.4.6(@babel/core@7.29.7)(@playwright/test@1.56.1)(@types/node@22.20.5)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(sass@1.77.4))(payload@3.94.2(graphql@16.14.2)(typescript@5.7.3))(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(typescript@5.7.3)
       '@payloadcms/richtext-lexical':
         specifier: 3.94.2
         version: 3.94.2(@faceless-ui/modal@3.0.0(react-dom@19.2.9(react@19.2.9))(react@19.2.9))(@faceless-ui/scroll-info@2.0.0(react-dom@19.2.9(react@19.2.9))(react@19.2.9))(@payloadcms/next@3.94.2(@types/react@19.2.18)(graphql@16.14.2)(monaco-editor@0.57.0)(next@16.4.6(@babel/core@7.29.7)(@playwright/test@1.56.1)(@types/node@22.20.5)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(sass@1.77.4))(payload@3.94.2(graphql@16.14.2)(typescript@5.7.3))(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(typescript@5.7.3))(@types/react@19.2.18)(monaco-editor@0.57.0)(next@16.4.6(@babel/core@7.29.7)(@playwright/test@1.56.1)(@types/node@22.20.5)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(sass@1.77.4))(payload@3.94.2(graphql@16.14.2)(typescript@5.7.3))(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(typescript@5.7.3)(yjs@13.6.33)
-      '@payloadcms/storage-s3':
-        specifier: 3.94.2
-        version: 3.94.2(@types/react@19.2.18)(monaco-editor@0.57.0)(next@16.4.6(@babel/core@7.29.7)(@playwright/test@1.56.1)(@types/node@22.20.5)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(sass@1.77.4))(payload@3.94.2(graphql@16.14.2)(typescript@5.7.3))(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(typescript@5.7.3)
       '@payloadcms/ui':
         specifier: 3.94.2
         version: 3.94.2(@types/react@19.2.18)(monaco-editor@0.57.0)(next@16.4.6(@babel/core@7.29.7)(@playwright/test@1.56.1)(@types/node@22.20.5)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(sass@1.77.4))(payload@3.94.2(graphql@16.14.2)(typescript@5.7.3))(react-dom@19.2.9(react@19.2.9))(react@19.2.9)(typescript@5.7.3)
