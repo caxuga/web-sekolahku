@@ -56,6 +56,7 @@ function createSupabaseAdapter(options: SupabaseStorageOptions, collectionPrefix
       if (!response.ok) {
         throw new Error(`Supabase Storage upload failed (${response.status}): ${await response.text()}`)
       }
+      return data
     },
 
     handleDelete: async ({ storageFilePath }) => {
@@ -129,12 +130,13 @@ export const supabaseStorage = (options: SupabaseStorageOptions) => (incomingCon
         req,
       })
 
-    let sizeLimit = req.payload.config.upload.limits?.fileSize\n    if (sizeLimit === Infinity) sizeLimit = undefined
+    let sizeLimit = req.payload.config.upload.limits?.fileSize
+    if (sizeLimit === Infinity) sizeLimit = undefined
     if (typeof filesize !== 'number' || !Number.isFinite(filesize) || filesize < 0) {
       throw new APIError('Invalid file size', 400)
     }
-    assertClientUploadFileSize(filesize)
-    if (typeof sizeLimit === 'number' && sizeLimit !== Infinity && filesize > sizeLimit) {
+    if (sizeLimit) assertClientUploadFileSize(filesize)
+    if (typeof sizeLimit === 'number' && filesize > sizeLimit) {
       throw new APIError(`File exceeds the configured upload limit of ${Math.round(sizeLimit / 1024 / 1024)} MB`, 400)
     }
 
