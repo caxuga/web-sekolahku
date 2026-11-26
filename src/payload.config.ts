@@ -43,6 +43,7 @@ export default buildConfig({
   collections: [Users, Media, ArticlesMedia, Takwim, Siaran, Categories],
   globals: [SchoolSettings],
   editor: lexicalEditor(),
+  upload: { limits: { fileSize: 50 * 1024 * 1024 } },
   graphQL: { disable: true },
   i18n: {
     translations: {
