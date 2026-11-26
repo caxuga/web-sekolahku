@@ -158,7 +158,9 @@ export const supabaseStorage = (options: SupabaseStorageOptions) => (incomingCon
       filename: sanitizedFilename,
       docPrefix: sanitizedDocPrefix,
       headers: { 'Content-Type': mimeType, 'Cache-Control': 'max-age=3600' },
-      url: /^https?:\\/\\//i.test(signedData.url)\n        ? signedData.url\n        : `${baseURL}${signedData.url.startsWith('/') ? '' : '/'}${signedData.url}`,
+      url: signedData.url.startsWith('http')
+        ? signedData.url
+        : `${baseURL}${signedData.url.startsWith('/') ? '' : '/'}${signedData.url}`,
     })
   }
 
