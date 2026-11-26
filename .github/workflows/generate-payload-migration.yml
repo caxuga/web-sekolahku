@@ -1,0 +1,59 @@
+name: Generate Payload Migration
+
+on:
+  push:
+    branches: [chore/security-baseline]
+    paths:
+      - 'src/collections/**'
+      - 'src/globals/**'
+      - 'src/payload.config.ts'
+      - '.github/workflows/generate-payload-migration.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: payload-migration
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/web_sekolahku_ci
+      PAYLOAD_SECRET: ci-only-secret-value-with-more-than-thirty-two-characters
+      STORAGE_DRIVER: local
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: chore/security-baseline
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate initial Payload migration
+        run: pnpm migrate:create initial_schema --skip-empty
+
+      - name: Commit generated migration
+        run: |
+          git add src/migrations
+          if git diff --cached --quiet; then
+            echo "No migration changes generated."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "db(migrations): generate initial Payload schema"
+          git push origin chore/security-baseline

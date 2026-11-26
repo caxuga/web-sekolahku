@@ -1,216 +1,139 @@
-# sekolahku-mod-cms
+# Web Sekolahku
 
-A Payload CMS application built with Next.js for managing Sekolahku content. Features server-side authentication with strong session security and password policies.
+CMS dan website profil sekolah berbasis Next.js, React, TypeScript, dan Payload CMS 3.
 
-## Prerequisites
+## Stack
 
-- **Node.js**: `^18.20.2` or `>=20.9.0`
-- **pnpm**: `^9` or `^10`
-- **MongoDB**: For data persistence (local or remote URI)
+- Next.js 16 + React 19
+- Payload CMS 3 (Admin di `/admin`)
+- Supabase PostgreSQL untuk database
+- Supabase Storage untuk media publik sekolah
+- Vercel Hobby untuk hosting dan Preview Deployments
+- GitHub untuk source control dan CI
+- pnpm 10
 
-## Quick Start
+## Prinsip biaya
 
-### 1. Install Dependencies
+Pengembangan menggunakan paket gratis terlebih dahulu. Tidak ada ketergantungan pada Cloudflare R2 atau layanan storage berbayar.
+
+Batas paket gratis tetap berlaku. Supabase Free dapat menjeda proyek yang tidak aktif selama periode tertentu dan memiliki kuota database, storage, serta bandwidth. Periksa penggunaan di Dashboard Supabase secara berkala. Jangan mengaktifkan paket berbayar atau overage tanpa keputusan terpisah.
+
+## Prasyarat
+
+- Node.js `^22.23.5 || ^24.22.3 || >=26.13.1`
+- pnpm 9 atau 10
+- PostgreSQL lokal atau Supabase PostgreSQL
+
+## Menjalankan lokal
 
 ```bash
 pnpm install
-```
-
-### 2. Setup Environment Variables
-
-Copy `.env.example` to `.env.local`:
-
-```bash
 cp .env.example .env.local
-```
-
-Configure the following variables:
-
-| Variable                           | Description                   | Example                         |
-| ---------------------------------- | ----------------------------- | ------------------------------- |
-| `DATABASE_URI`                     | MongoDB connection string     | `mongodb://127.0.0.1/sekolahku` |
-| `PAYLOAD_SECRET`                   | Secret key for Payload CMS    | Generate a secure random string |
-| `PAYLOAD_API_KEY`                  | API key for external requests | Generate a secure random string |
-| `SERVICE_USER_EMAIL`               | Email for service account     | `service@example.com`           |
-| `PAYLOAD_TOKEN_EXPIRATION_SECONDS` | Session timeout (seconds)     | `3600` (default: 60 minutes)    |
-| `PAYLOAD_LOGOUT_ON_CLOSE`          | Logout on browser close       | `false` (best-effort only)      |
-| `STORAGE_DRIVER`                   | Upload storage backend        | `local` for development, `s3` for AWS |
-
-### 3. Run Development Server
-
-```bash
 pnpm dev
 ```
 
-Access the admin panel at `http://localhost:3000/admin`
+Buka `http://localhost:3000/admin` untuk panel CMS. Konfigurasi lokal minimal:
 
-## Available Scripts
+- `DATABASE_URL`: URI PostgreSQL lokal atau Supabase Session Pooler.
+- `PAYLOAD_SECRET`: secret acak minimal 32 karakter.
+- `STORAGE_DRIVER=local`: gunakan filesystem hanya untuk pengembangan lokal.
 
-| Script                    | Purpose                                        |
-| ------------------------- | ---------------------------------------------- |
-| `pnpm dev`                | Start development server with hot reload       |
-| `pnpm devsafe`            | Clean build cache and start development server |
-| `pnpm build`              | Build for production                           |
-| `pnpm start`              | Start production server                        |
-| `pnpm lint`               | Run ESLint checks                              |
-| `pnpm generate:types`     | Generate TypeScript types from Payload config  |
-| `pnpm generate:importmap` | Generate Payload admin UI import map           |
-| `pnpm payload`            | Access Payload CLI directly                    |
+Untuk memakai Supabase Storage, isi `SUPABASE_URL`, `SUPABASE_STORAGE_BUCKET`, dan `SUPABASE_SERVICE_ROLE_KEY`, lalu set `STORAGE_DRIVER=supabase`. Service role key hanya boleh disimpan di server environment; jangan gunakan prefix `NEXT_PUBLIC_` dan jangan commit nilainya.
 
-## Tech Stack
+## Perintah
 
-- **Framework**: Next.js 15.4.7 with React 19
-- **CMS**: Payload CMS 3.64.0
-- **Database**: MongoDB
-- **Storage**: Local filesystem in development, AWS S3 in production
-- **Rich Text Editor**: Lexical
-- **Testing**: Vitest 3.2.3, Playwright 1.56.1
-- **Language**: TypeScript 5.7.3
-- **Package Manager**: pnpm
+| Perintah | Fungsi |
+|---|---|
+| `pnpm dev` | Server pengembangan |
+| `pnpm build` | Build produksi |
+| `pnpm start` | Menjalankan build |
+| `pnpm typecheck` | Pemeriksaan TypeScript |
+| `pnpm lint` | ESLint |
+| `pnpm test` | Unit dan integration test |
+| `pnpm generate:types` | Generate tipe Payload |
+| `pnpm generate:importmap` | Generate import map Admin |
 
-## Security Features
+## Supabase Storage
 
-### Password Policy
+Buat bucket bernama `web-sekolahku-media` dengan pengaturan:
 
-All admin users must use strong passwords with the following requirements:
+- Public bucket: aktif, karena koleksi Media dan Media Artikel memang dapat dibaca publik.
+- Batas ukuran: 50 MB.
+- MIME type: PDF, PNG, JPEG/JPG, dan WebP.
+- Upload dan penghapusan tetap dilakukan melalui server CMS menggunakan service role key atau signed upload URL.
 
-- **Minimum 12 characters** long
-- **Contains uppercase letter** (A-Z)
-- **Contains lowercase letter** (a-z)
-- **Contains number** (0-9)
-- **Contains special character** (!@#$%^&\*, etc.)
+Bucket publik berarti siapa pun yang memiliki URL file dapat membacanya. Jangan menyimpan dokumen pribadi, data siswa, atau dokumen internal di koleksi media publik. File rahasia memerlukan bucket private dan kontrol akses terpisah.
 
-Example valid password: `MyPass123!Secure`
+Adapter Supabase Storage menggunakan Payload Cloud Storage Plugin. Panel Admin meminta signed upload URL ke server, lalu browser mengunggah file langsung ke Supabase. Ini menghindari batas request body 4.5 MB pada Vercel untuk upload asli. Payload tetap memproses metadata dan ukuran gambar; hasil ukuran gambar disimpan melalui adapter server.
 
-### Session Security
+## Vercel
 
-This project enforces server-side authentication expiration for admin users:
+Hubungkan repository `caxuga/web-sekolahku` ke Vercel. Gunakan Node.js 24.x dan atur environment variables secara terpisah untuk Preview dan Production.
 
-- **Token Expiration**: Configurable via `PAYLOAD_TOKEN_EXPIRATION_SECONDS` (default: 3600 seconds / 60 minutes)
-- **Auto-Refresh Disabled**: `admin.autoRefresh` is disabled to prevent silent token extension while users remain on admin pages
-- **Secure Cookies**:
-  - `SameSite=Strict` for maximum CSRF protection
-  - `Secure=true` (HTTPS only)
-  - Session tracking enabled via `useSessions: true`
+| Variable | Keterangan |
+|---|---|
+| `DATABASE_URL` | URI Supabase PostgreSQL Session Pooler |
+| `PAYLOAD_SECRET` | Secret unik minimal 32 karakter per environment |
+| `STORAGE_DRIVER` | Isi `supabase` |
+| `SUPABASE_URL` | Project URL Supabase |
+| `SUPABASE_STORAGE_BUCKET` | `web-sekolahku-media` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role/secret key, server-only |
 
-### Optional: Logout on Browser Close
+Gunakan database dan secret yang sesuai untuk Preview dan Production. Jangan kirim kredensial melalui issue, commit, atau chat. Masukkan langsung di Vercel Project Settings → Environment Variables.
 
-Enable `PAYLOAD_LOGOUT_ON_CLOSE=true` to send a logout signal when users close the browser tab/window:
+### Mode visual preview
 
-- Uses `pagehide` event detection
-- Falls back to `navigator.sendBeacon` for reliability
-- **Best-effort only** — not guaranteed on every browser/device scenario
+Vercel Preview dapat memakai `CMS_PREVIEW_MODE=true`. Jika `DATABASE_URL` belum diisi, aplikasi menampilkan shell website dengan data contoh dan melewati inisialisasi database. Mode visual preview tidak dapat digunakan untuk menguji panel CMS, login, penyimpanan konten, atau upload.
 
-## Project Structure
+Setelah database dan environment variables siap, mode visual otomatis berhenti menggunakan fallback.
 
-```
-src/
-├── app/                    # Next.js app directory
-│   ├── (frontend)/        # Public frontend pages
-│   ├── (payload)/         # Payload admin UI routes
-│   │   └── LogoutOnClose.tsx    # Browser close logout handler
-│   └── api/               # API routes
-├── collections/           # Payload CMS collections
-│   ├── Users.ts           # User management with auth
-│   ├── Media.ts           # Media files
-│   ├── ArticlesMedia.ts   # Article media relations
-│   ├── Categories.ts      # Content categories
-│   ├── Siaran.ts          # Broadcasts/announcements
-│   └── Takwim.ts          # Calendar/timeline
-├── auth/                  # Authentication strategies
-│   └── apiKeyStrategy.ts  # API key authentication
-├── utils/                 # Utility functions
-│   ├── password-policy.util.ts    # Password validation
-│   ├── env-parse.util.ts
-│   └── ...
-├── config/                # Configuration files
-│   └── env.config.ts
-└── payload.config.ts      # Payload CMS configuration
-```
+## Fitur website dan CMS
 
-## Database
+Website publik saat ini menyediakan:
+- Beranda dengan identitas sekolah, berita terbaru, dan agenda terbaru.
+- Daftar berita dan detail berita.
+- Daftar agenda dan detail agenda.
+- Layout responsif untuk desktop, tablet, dan ponsel.
 
-### MongoDB Setup
+Di panel `/admin`, konfigurasi:
+- **Identitas Sekolah**: nama, slogan, judul beranda, deskripsi, logo, alamat, telepon, email, dan footer.
+- **Berita** dan **Agenda Sekolah**: judul, slug otomatis, ringkasan, gambar, tanggal, isi, kategori, dan status publikasi.
 
-**Local Development:**
+### Peran pengguna
 
-```bash
-# Using Docker
-docker run -d -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=password mongo
+| Peran | Hak utama |
+|---|---|
+| Super Admin | Seluruh konfigurasi dan pengguna |
+| Admin Sekolah | Mengelola pengguna, identitas, konten, dan publikasi |
+| Kepala Sekolah | Meninjau dan menerbitkan konten |
+| Editor | Membuat, mengubah, dan menghapus konten |
+| Guru | Membuat konten dan mengubah konten miliknya |
 
-# Update DATABASE_URI in .env.local
-DATABASE_URI=mongodb://admin:password@localhost:27017/sekolahku
-```
+Pengguna pertama yang dibuat pada database kosong otomatis menjadi **Super Admin**. Setelah login, buat akun staf lain melalui menu Pengguna dan tetapkan perannya.
 
-**Remote MongoDB:**
+Konten baru berstatus **Draft**. Editor/Guru dapat mengirim konten ke status **Menunggu Persetujuan**. Hanya Super Admin, Admin Sekolah, atau Kepala Sekolah yang dapat mengubah konten menjadi **Terbit**. Hanya konten Terbit yang dibaca oleh pengunjung publik.
 
-```
-DATABASE_URI=mongodb+srv://username:password@cluster.mongodb.net/sekolahku
-```
+## Keamanan
 
-## Docker Support
+- Simpan semua secret di Vercel Environment Variables.
+- Jangan pernah memberi prefix `NEXT_PUBLIC_` pada service role key atau secret lain.
+- Service role key melewati Row Level Security; batasi penggunaannya hanya di server CMS.
+- Koleksi Media bersifat publik sesuai desain website. Jangan mengunggah file rahasia ke sana.
+- Rotasi credential yang pernah terpublikasi di repository lama.
+- Aktifkan branch protection dan wajibkan CI berhasil sebelum merge ke `main`.
 
-### Development Container
+## Deployment
 
-```bash
-docker-compose up
-```
+- `main`: Production deployment melalui Vercel Git Integration.
+- Pull request dan branch fitur: Vercel Preview deployment.
+- GitHub Actions CI menjalankan typecheck, lint, tests, dan build sebelum merge.
 
-### Production Build
+## Migrasi database
 
-```bash
-docker build -f Dockerfile.prod -t sekolahku-cms:latest .
-docker run -p 3000:3000 sekolahku-cms:latest
-```
+Payload menggunakan adapter PostgreSQL resmi `@payloadcms/db-postgres`. Gunakan Supabase PostgreSQL dengan connection string Session Pooler untuk Vercel. Simpan kredensial hanya di environment variables.
 
-## Testing
+- `pnpm migrate:create` membuat file migrasi.
+- `pnpm migrate` menjalankan migrasi yang belum diterapkan.
+- `pnpm migrate:status` memeriksa status migrasi.
 
-### Unit & Integration Tests
-
-```bash
-# Run all tests
-pnpm exec vitest
-
-# Run with coverage
-pnpm exec vitest --coverage
-
-# Watch mode
-pnpm exec vitest --watch
-```
-
-### E2E Tests
-
-```bash
-# Run Playwright tests
-pnpm exec playwright test
-```
-
-## Development Notes
-
-### Type Generation
-
-When modifying collections or auth configurations, regenerate TypeScript types:
-
-```bash
-pnpm generate:types
-```
-
-### Import Map
-
-When adding custom admin UI components, update the import map:
-
-```bash
-pnpm generate:importmap
-```
-
-### Environment Variables in Production
-
-Ensure all required environment variables are set in your production environment (`.env.production` or platform-specific secret management).
-
-### Local Upload Storage
-
-Development uses Payload's local filesystem storage by default, so AWS credentials are not required. Files are saved under `media/` and are included in the Docker development volume. Set `STORAGE_DRIVER=s3` only when you intentionally want to test against S3 locally.
-
-## License
-
-MIT
+Aktifkan `RUN_PAYLOAD_MIGRATIONS=true` hanya pada environment yang telah memiliki database dan file migrasi siap dijalankan.

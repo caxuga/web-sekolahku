@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
 import path from 'path'
 import { getAltFromFilename } from '../utils/alt.util'
+import { canCreateContent, canDeleteContent } from '../access/roles'
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg']
@@ -17,6 +18,9 @@ export const Media: CollectionConfig = {
   },
   access: {
     read: () => true,
+    create: canCreateContent,
+    update: canCreateContent,
+    delete: canDeleteContent,
   },
   hooks: {
     beforeChange: [
