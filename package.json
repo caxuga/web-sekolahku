@@ -20,10 +20,10 @@
     "migrate:status": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:status"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1158.0",
+    "@payloadcms/db-postgres": "3.94.2",
     "@payloadcms/next": "3.94.2",
+    "@payloadcms/plugin-cloud-storage": "3.94.2",
     "@payloadcms/richtext-lexical": "3.94.2",
-    "@payloadcms/storage-s3": "3.94.2",
     "@payloadcms/ui": "3.94.2",
     "cross-env": "^7.0.3",
     "dotenv": "16.4.7",
@@ -33,8 +33,7 @@
     "react": "19.2.9",
     "react-dom": "19.2.9",
     "sharp": "0.35.5",
-    "zod": "^4.1.13",
-    "@payloadcms/db-postgres": "3.94.2"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
