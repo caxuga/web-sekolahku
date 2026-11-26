@@ -7,9 +7,16 @@ CMS dan website profil sekolah berbasis Next.js, React, TypeScript, dan Payload 
 - Next.js 16 + React 19
 - Payload CMS 3 (Admin di `/admin`)
 - Supabase PostgreSQL untuk database
-- Cloudflare R2 melalui Payload S3 Storage Adapter
-- Vercel untuk hosting dan Preview Deployments
+- Supabase Storage untuk media publik sekolah
+- Vercel Hobby untuk hosting dan Preview Deployments
+- GitHub untuk source control dan CI
 - pnpm 10
+
+## Prinsip biaya
+
+Pengembangan menggunakan paket gratis terlebih dahulu. Tidak ada ketergantungan pada Cloudflare R2 atau layanan storage berbayar.
+
+Batas paket gratis tetap berlaku. Supabase Free dapat menjeda proyek yang tidak aktif selama periode tertentu dan memiliki kuota database, storage, serta bandwidth. Periksa penggunaan di Dashboard Supabase secara berkala. Jangan mengaktifkan paket berbayar atau overage tanpa keputusan terpisah.
 
 ## Prasyarat
 
@@ -31,7 +38,7 @@ Buka `http://localhost:3000/admin` untuk panel CMS. Konfigurasi lokal minimal:
 - `PAYLOAD_SECRET`: secret acak minimal 32 karakter.
 - `STORAGE_DRIVER=local`: gunakan filesystem hanya untuk pengembangan lokal.
 
-Jangan isi kredensial produksi di `.env.example`, commit, atau issue publik.
+Untuk memakai Supabase Storage, isi `SUPABASE_URL`, `SUPABASE_STORAGE_BUCKET`, dan `SUPABASE_SERVICE_ROLE_KEY`, lalu set `STORAGE_DRIVER=supabase`. Service role key hanya boleh disimpan di server environment; jangan gunakan prefix `NEXT_PUBLIC_` dan jangan commit nilainya.
 
 ## Perintah
 
@@ -46,22 +53,39 @@ Jangan isi kredensial produksi di `.env.example`, commit, atau issue publik.
 | `pnpm generate:types` | Generate tipe Payload |
 | `pnpm generate:importmap` | Generate import map Admin |
 
+## Supabase Storage
+
+Buat bucket bernama `web-sekolahku-media` dengan pengaturan:
+
+- Public bucket: aktif, karena koleksi Media dan Media Artikel memang dapat dibaca publik.
+- Batas ukuran: 50 MB.
+- MIME type: PDF, PNG, JPEG/JPG, dan WebP.
+- Upload dan penghapusan tetap dilakukan melalui server CMS menggunakan service role key atau signed upload URL.
+
+Bucket publik berarti siapa pun yang memiliki URL file dapat membacanya. Jangan menyimpan dokumen pribadi, data siswa, atau dokumen internal di koleksi media publik. File rahasia memerlukan bucket private dan kontrol akses terpisah.
+
+Adapter Supabase Storage menggunakan Payload Cloud Storage Plugin. Panel Admin meminta signed upload URL ke server, lalu browser mengunggah file langsung ke Supabase. Ini menghindari batas request body 4.5 MB pada Vercel untuk upload asli. Payload tetap memproses metadata dan ukuran gambar; hasil ukuran gambar disimpan melalui adapter server.
+
 ## Vercel
 
-Hubungkan repository fork ke Vercel. Gunakan Node.js 24.x dan atur environment variables secara terpisah untuk Preview dan Production.
+Hubungkan repository `caxuga/web-sekolahku` ke Vercel. Gunakan Node.js 24.x dan atur environment variables secara terpisah untuk Preview dan Production.
 
 | Variable | Keterangan |
 |---|---|
-| `DATABASE_URL` | URI Supabase PostgreSQL khusus environment |
+| `DATABASE_URL` | URI Supabase PostgreSQL Session Pooler |
 | `PAYLOAD_SECRET` | Secret unik minimal 32 karakter per environment |
-| `STORAGE_DRIVER` | Isi `r2` |
-| `R2_BUCKET` | Nama bucket R2 |
-| `R2_ENDPOINT` | S3 API endpoint dari Cloudflare |
-| `R2_PUBLIC_URL` | Domain publik/custom domain bucket |
-| `R2_ACCESS_KEY_ID` | R2 access key |
-| `R2_SECRET_ACCESS_KEY` | R2 secret key |
+| `STORAGE_DRIVER` | Isi `supabase` |
+| `SUPABASE_URL` | Project URL Supabase |
+| `SUPABASE_STORAGE_BUCKET` | `web-sekolahku-media` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role/secret key, server-only |
 
-Buat database dan bucket terpisah untuk Preview dan Production. Jangan gunakan kredensial yang sama untuk keduanya.
+Gunakan database dan secret yang sesuai untuk Preview dan Production. Jangan kirim kredensial melalui issue, commit, atau chat. Masukkan langsung di Vercel Project Settings → Environment Variables.
+
+### Mode visual preview
+
+Vercel Preview dapat memakai `CMS_PREVIEW_MODE=true`. Jika `DATABASE_URL` belum diisi, aplikasi menampilkan shell website dengan data contoh dan melewati inisialisasi database. Mode visual preview tidak dapat digunakan untuk menguji panel CMS, login, penyimpanan konten, atau upload.
+
+Setelah database dan environment variables siap, mode visual otomatis berhenti menggunakan fallback.
 
 ## Fitur website dan CMS
 
@@ -74,12 +98,6 @@ Website publik saat ini menyediakan:
 Di panel `/admin`, konfigurasi:
 - **Identitas Sekolah**: nama, slogan, judul beranda, deskripsi, logo, alamat, telepon, email, dan footer.
 - **Berita** dan **Agenda Sekolah**: judul, slug otomatis, ringkasan, gambar, tanggal, isi, kategori, dan status publikasi.
-
-### Mode visual preview
-
-Vercel Preview memiliki `CMS_PREVIEW_MODE=true`. Jika `DATABASE_URL` belum diisi, aplikasi menampilkan shell website dengan data contoh dan menyembunyikan tautan login CMS. Mode ini hanya berlaku pada target Preview; Production tetap wajib memakai database dan secret asli.
-
-Setelah Supabase PostgreSQL Preview siap, isi `DATABASE_URL` dan `PAYLOAD_SECRET` di Vercel. Mode visual otomatis berhenti menggunakan fallback setelah `DATABASE_URL` tersedia. Panel admin dan penyimpanan konten belum dapat diuji dalam mode visual preview.
 
 ### Peran pengguna
 
@@ -95,29 +113,13 @@ Pengguna pertama yang dibuat pada database kosong otomatis menjadi **Super Admin
 
 Konten baru berstatus **Draft**. Editor/Guru dapat mengirim konten ke status **Menunggu Persetujuan**. Hanya Super Admin, Admin Sekolah, atau Kepala Sekolah yang dapat mengubah konten menjadi **Terbit**. Hanya konten Terbit yang dibaca oleh pengunjung publik.
 
-### Preview Vercel
-
-Project Vercel terhubung ke repository `caxuga/web-sekolahku`. Pull request dari branch fitur akan menjadi Preview Deployment. Untuk menjalankan CMS secara fungsional, atur Environment Variables pada target **Preview**:
-
-- `DATABASE_URL`: database Supabase PostgreSQL khusus Preview.
-- `PAYLOAD_SECRET`: secret unik untuk Preview, minimal 32 karakter.
-- `STORAGE_DRIVER`: `r2` jika upload akan diuji.
-- `R2_BUCKET`, `R2_ENDPOINT`, `R2_PUBLIC_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`: kredensial bucket Preview.
-
-Jangan menggunakan database, secret, atau bucket Production untuk Preview. Jangan kirim secret melalui issue, commit, atau chat. Masukkan langsung di Vercel Project Settings → Environment Variables. Jika belum ada database Preview, deployment tidak dapat menjalankan panel CMS atau mengambil konten dari database.
-
-## Cloudflare R2 CORS
-
-Konfigurasikan bucket agar mengizinkan origin domain Vercel Preview/Production yang digunakan, metode `PUT`, dan header `If-None-Match`. Batasi origin ke domain aplikasi; jangan memakai wildcard untuk bucket produksi.
-
-File yang dikelola koleksi Media saat ini disajikan melalui URL publik R2. Jangan menyimpan file rahasia atau dokumen pribadi di koleksi tersebut.
-
 ## Keamanan
 
-- Ganti/rotasi setiap credential yang pernah terpublikasi di repository lama.
 - Simpan semua secret di Vercel Environment Variables.
-- Jangan pernah memberi prefix `NEXT_PUBLIC_` pada secret server.
-- Akses data publik harus dibatasi pada konten berstatus published sebelum website publik diaktifkan.
+- Jangan pernah memberi prefix `NEXT_PUBLIC_` pada service role key atau secret lain.
+- Service role key melewati Row Level Security; batasi penggunaannya hanya di server CMS.
+- Koleksi Media bersifat publik sesuai desain website. Jangan mengunggah file rahasia ke sana.
+- Rotasi credential yang pernah terpublikasi di repository lama.
 - Aktifkan branch protection dan wajibkan CI berhasil sebelum merge ke `main`.
 
 ## Deployment
@@ -125,7 +127,6 @@ File yang dikelola koleksi Media saat ini disajikan melalui URL publik R2. Janga
 - `main`: Production deployment melalui Vercel Git Integration.
 - Pull request dan branch fitur: Vercel Preview deployment.
 - GitHub Actions CI menjalankan typecheck, lint, tests, dan build sebelum merge.
-
 
 ## Migrasi database
 
