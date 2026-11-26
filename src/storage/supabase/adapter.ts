@@ -38,7 +38,7 @@ function createSupabaseAdapter(options: SupabaseStorageOptions, collectionPrefix
       return `${baseURL}/object/public/${encodeURIComponent(options.bucket)}/${encodeKey(storageFilePath)}`
     },
 
-    handleUpload: async ({ file, storageFilePath }) => {
+    handleUpload: async ({ data, file, storageFilePath }) => {
       const body = file.tempFilePath ? await fs.readFile(file.tempFilePath) : file.buffer
       const response = await fetch(
         `${baseURL}/object/${encodeURIComponent(options.bucket)}/${encodeKey(storageFilePath)}`,
@@ -129,7 +129,7 @@ export const supabaseStorage = (options: SupabaseStorageOptions) => (incomingCon
         req,
       })
 
-    const sizeLimit = req.payload.config.upload.limits?.fileSize
+    let sizeLimit = req.payload.config.upload.limits?.fileSize\n    if (sizeLimit === Infinity) sizeLimit = undefined
     if (typeof filesize !== 'number' || !Number.isFinite(filesize) || filesize < 0) {
       throw new APIError('Invalid file size', 400)
     }
